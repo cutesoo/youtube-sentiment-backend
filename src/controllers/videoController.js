@@ -15,16 +15,23 @@ const searchYoutubeVideos = async (request, h) => {
 
     try {
         console.log('[VIDEO_CONTROLLER] INFO: Calling ML API searchVideos utility...');
-        const mlApiResponse = await searchVideos(keyword); 
+        const mlApiResponse = await searchVideos(keyword);
+
+        if (!mlApiResponse) {
+            console.error('[VIDEO_CONTROLLER] ERROR: mlApiResponse adalah null atau undefined setelah memanggil searchVideos.');
+            return Boom.badImplementation('Gagal mendapatkan respons dari ML API searchVideos.');
+        }
+
+        const videosToProcess = mlApiResponse; 
 
         if (!Array.isArray(videosToProcess)) {
-            console.error('[VIDEO_CONTROLLER] ERROR: ML API mengembalikan format data yang tidak diharapkan (diharapkan array langsung). Data yang diterima:', mlApiResponse);
+            console.error('[VIDEO_CONTROLLER] ERROR: ML API tidak mengembalikan array di dalam properti "items". Data yang diterima:', mlApiResponse);
             return Boom.badImplementation('ML API mengembalikan format data yang tidak diharapkan untuk pencarian video (diharapkan array langsung)');
         }
         console.log(`[VIDEO_CONTROLLER] INFO: Menerima ${videosToProcess.length} video dari ML API.`);
 
         const simplifiedVideos = videosToProcess.map(video => {
-            const thumbnailUrl = video.thumbnail || null; 
+            const thumbnailUrl = video.thumbnails?.high?.url || video.thumbnails?.default?.url || null;
 
             return {
                 videoId: video.video_id,
